@@ -114,10 +114,9 @@ exports.checkoutSession = (0, express_async_handler_1.default)(async (req, res, 
     res.status(200).json({ status: "success", session });
 });
 const createCardOrder = async (session, next) => {
-    const cartId = session.data.client_reference_id;
-    console.log('order created');
-    const userEmail = session.data.customer_email;
-    const shippingAddress = session.data.metadata;
+    const cartId = session.client_reference_id;
+    const userEmail = session.customer_email;
+    const shippingAddress = session.metadata;
     console.log(cartId);
     console.log(userEmail);
     //app settings
@@ -170,7 +169,7 @@ exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, r
         return;
     }
     if (event.type === "checkout.session.completed") {
-        createCardOrder(event, next);
+        createCardOrder(event.data.object, next);
     }
     response.status(201).json({ recived: true });
 });
