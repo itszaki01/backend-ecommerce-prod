@@ -114,6 +114,7 @@ exports.checkoutSession = (0, express_async_handler_1.default)(async (req, res, 
     res.status(200).json({ status: "success", session });
 });
 const createCardOrder = async (session) => {
+    console.log('order called');
     const cartId = session.data.client_reference_id;
     const userEmail = session.data.customer_email;
     const shippingAddress = session.data.metadata;
@@ -138,7 +139,6 @@ const createCardOrder = async (session) => {
         paidAt: new Date(Date.now()),
         paymentMethod: 'card'
     });
-    console.log('order created');
     //4: decrement products quntity and increase sold
     if (order) {
         const bulkOption = cart.cartItems.map((item) => ({
@@ -166,7 +166,7 @@ exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, r
         return;
     }
     if (event.type === "checkout.session.completed") {
-        await createCardOrder(event);
+        createCardOrder(event);
     }
     response.status(201).json({ recived: true });
 });
