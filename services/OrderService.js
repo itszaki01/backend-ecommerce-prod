@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkoutSession = exports.updateOrderDelivred = exports.updateOrderPayed = exports.getOrder = exports.getAllOrders = exports.createCashOrder = void 0;
+exports.webhookCheckout = exports.checkoutSession = exports.updateOrderDelivred = exports.updateOrderPayed = exports.getOrder = exports.getAllOrders = exports.createCashOrder = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const CartModal_1 = require("../models/CartModal");
 const apiError_1 = require("../utils/apiError");
@@ -11,7 +11,7 @@ const OrderModal_1 = require("../models/OrderModal");
 const ProductModal_1 = require("../models/ProductModal");
 const handlersFactory_1 = require("../helpers/handlersFactory");
 const Stripe = require("stripe");
-const stripe = Stripe("sk_test_51ODOYKEdSuAaiQN8jOAjhJ02QhMpsv79GWSA8bcOiDOEyAHxGLkYvixvkPh9p3qXZmUs0ysJzZZxAfz0mk1K77Uw00xb1mZaiq");
+const stripe = Stripe(process.env.STRIPE_SECRET);
 exports.createCashOrder = (0, express_async_handler_1.default)(async (req, res, next) => {
     const _req = req;
     //app settings
@@ -111,4 +111,19 @@ exports.checkoutSession = (0, express_async_handler_1.default)(async (req, res, 
     });
     // 4) send session to response
     res.status(200).json({ status: "success", session });
+});
+exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, response) => {
+    const sig = request.headers['stripe-signature'];
+    let event;
+    try {
+        event = stripe.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    }
+    catch (err) {
+        const _err = err;
+        response.status(400).send(`Webhook Error: ${_err.message}`);
+        return;
+    }
+    if (event.type === 'checkout.session.completed') {
+        console.log('order completed');
+    }
 });

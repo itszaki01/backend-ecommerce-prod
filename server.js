@@ -13,6 +13,7 @@ const path_1 = __importDefault(require("path"));
 const cors_1 = __importDefault(require("cors"));
 const compression_1 = __importDefault(require("compression"));
 const routes_1 = require("./routes");
+const OrderService_1 = require("./services/OrderService");
 //Configs
 dotenv_1.default.config({ path: "./config.env" });
 const NODE_ENV = process.env.NODE_ENV;
@@ -42,6 +43,7 @@ else {
 }
 //Routes
 (0, routes_1.mountedRoutes)(app, BASE_PATH);
+app.post('/webhook-checkout', express_1.default.raw({ type: 'application/json' }), OrderService_1.webhookCheckout);
 //Express Error Hanlders
 app.all("*", route404Hanlder_1.route404Hanlder);
 app.use(expressErrorHandler_1.expressErrorHandler);
