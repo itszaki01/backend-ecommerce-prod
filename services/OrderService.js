@@ -120,10 +120,10 @@ exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, r
     }
     catch (err) {
         const _err = err;
+        console.log(`Webhook Error: ${_err.message}`);
         response.status(400).send(`Webhook Error: ${_err.message}`);
         return;
     }
-    console.log(event);
     if (event.type === 'checkout.session.completed') {
         console.log('order completed');
     }
