@@ -138,6 +138,7 @@ const createCardOrder = async (session) => {
         paidAt: new Date(Date.now()),
         paymentMethod: 'card'
     });
+    console.log('order created');
     //4: decrement products quntity and increase sold
     if (order) {
         const bulkOption = cart.cartItems.map((item) => ({
@@ -151,15 +152,12 @@ const createCardOrder = async (session) => {
         // 5) Clear cart depend on cartId
         await CartModal_1.Cart.findByIdAndDelete(cartId);
     }
-    return order;
 };
 exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, response) => {
     const sig = request.headers["stripe-signature"];
-    console.log(`Webhook called`);
     let event;
     try {
         event = stripe.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-        console.log(`Webhook Sucess`);
     }
     catch (err) {
         const _err = err;
