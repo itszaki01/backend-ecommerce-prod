@@ -118,6 +118,8 @@ const createCardOrder = async (session, next) => {
     console.log('order created');
     const userEmail = session.data.customer_email;
     const shippingAddress = session.data.metadata;
+    console.log(cartId);
+    console.log(userEmail);
     //app settings
     let taxPrice = 0;
     let shippingPrice = 0;
