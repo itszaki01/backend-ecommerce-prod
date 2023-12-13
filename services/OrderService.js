@@ -113,9 +113,9 @@ exports.checkoutSession = (0, express_async_handler_1.default)(async (req, res, 
     // 4) send session to response
     res.status(200).json({ status: "success", session });
 });
-const createCardOrder = async (session) => {
-    console.log('order called');
+const createCardOrder = async (session, next) => {
     const cartId = session.data.client_reference_id;
+    console.log('order created');
     const userEmail = session.data.customer_email;
     const shippingAddress = session.data.metadata;
     //app settings
@@ -123,8 +123,10 @@ const createCardOrder = async (session) => {
     let shippingPrice = 0;
     const cart = await CartModal_1.Cart.findById(cartId);
     const user = await UserModal_1.User.findOne({ email: userEmail });
-    if (!user || !cart)
-        return "wrong data";
+    if (!cart)
+        return next(new apiError_1.ApiError('wrong cart id', 404));
+    if (!user)
+        return next(new apiError_1.ApiError('wrong user id', 404));
     //2: get order price and check if there is a coupon
     const cartPrice = cart.totalPriceAfterDiscount ? cart.totalPriceAfterDiscount : cart.totalCartPrice;
     const totalOrderPrice = cartPrice + taxPrice + shippingPrice;
@@ -153,7 +155,7 @@ const createCardOrder = async (session) => {
         await CartModal_1.Cart.findByIdAndDelete(cartId);
     }
 };
-exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, response) => {
+exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, response, next) => {
     const sig = request.headers["stripe-signature"];
     let event;
     try {
@@ -166,7 +168,7 @@ exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, r
         return;
     }
     if (event.type === "checkout.session.completed") {
-        createCardOrder(event);
+        createCardOrder(event, next);
     }
     response.status(201).json({ recived: true });
 });
