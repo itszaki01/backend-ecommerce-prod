@@ -10,6 +10,7 @@ const apiError_1 = require("../utils/apiError");
 const OrderModal_1 = require("../models/OrderModal");
 const ProductModal_1 = require("../models/ProductModal");
 const handlersFactory_1 = require("../helpers/handlersFactory");
+const UserModal_1 = require("../models/UserModal");
 const Stripe = require("stripe");
 const stripe = Stripe(process.env.STRIPE_SECRET);
 exports.createCashOrder = (0, express_async_handler_1.default)(async (req, res, next) => {
@@ -112,8 +113,48 @@ exports.checkoutSession = (0, express_async_handler_1.default)(async (req, res, 
     // 4) send session to response
     res.status(200).json({ status: "success", session });
 });
+const createCardOrder = async (session) => {
+    const cartId = session.data.client_reference_id;
+    const userEmail = session.data.customer_email;
+    const shippingAddress = session.data.metadata;
+    //app settings
+    let taxPrice = 0;
+    let shippingPrice = 0;
+    const cart = await CartModal_1.Cart.findById(cartId);
+    const user = await UserModal_1.User.findOne({ email: userEmail });
+    if (!user || !cart)
+        return "wrong data";
+    //2: get order price and check if there is a coupon
+    const cartPrice = cart.totalPriceAfterDiscount ? cart.totalPriceAfterDiscount : cart.totalCartPrice;
+    const totalOrderPrice = cartPrice + taxPrice + shippingPrice;
+    const order = await OrderModal_1.Order.create({
+        user: user._id,
+        cartItems: cart.cartItems,
+        shippingAddress,
+        shippingPrice,
+        taxPrice,
+        totalOrderPrice,
+        isPaid: true,
+        paidAt: new Date(Date.now()),
+        paymentMethod: 'card'
+    });
+    //4: decrement products quntity and increase sold
+    if (order) {
+        const bulkOption = cart.cartItems.map((item) => ({
+            updateOne: {
+                filter: { _id: item.product },
+                update: { $inc: { quantity: -item.quantitiy, sold: +item.quantitiy } },
+            },
+        }));
+        //@ts-ignore
+        await ProductModal_1.Product.bulkWrite(bulkOption, {});
+        // 5) Clear cart depend on cartId
+        await CartModal_1.Cart.findByIdAndDelete(cartId);
+    }
+    return order;
+};
 exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, response) => {
-    const sig = request.headers['stripe-signature'];
+    const sig = request.headers["stripe-signature"];
     console.log(`Webhook called`);
     let event;
     try {
@@ -126,7 +167,8 @@ exports.webhookCheckout = (0, express_async_handler_1.default)(async (request, r
         response.status(400).send(`Webhook Error: ${_err.message}`);
         return;
     }
-    if (event.type === 'checkout.session.completed') {
-        console.log('order completed');
+    if (event.type === "checkout.session.completed") {
+        await createCardOrder(event);
     }
+    response.status(201).json({ recived: true });
 });
