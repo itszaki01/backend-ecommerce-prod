@@ -31,6 +31,7 @@ app.use((0, compression_1.default)());
 app.use(express_1.default.static(path_1.default.join(__dirname, "uploads")));
 //ConnectDB
 (0, db_1.connectDB)(DB_URI);
+app.post('/webhook-checkout', express_1.default.raw({ type: 'application/json' }), OrderService_1.webhookCheckout);
 //Middlewares
 app.use(express_1.default.json());
 // app.use(uploadProgressMiddleware)
@@ -43,7 +44,6 @@ else {
 }
 //Routes
 (0, routes_1.mountedRoutes)(app, BASE_PATH);
-app.post('/webhook-checkout', express_1.default.raw({ type: 'application/json' }), OrderService_1.webhookCheckout);
 //Express Error Hanlders
 app.all("*", route404Hanlder_1.route404Hanlder);
 app.use(expressErrorHandler_1.expressErrorHandler);
